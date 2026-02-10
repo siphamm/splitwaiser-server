@@ -3,13 +3,18 @@ import os
 from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
 
 from app.database import engine, Base
+from app.ratelimit import limiter
 from app.routes import trips, members, expenses, settlements
 
 load_dotenv()
 
 app = FastAPI(title="Splitwaiser API", version="0.1.0")
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 # CORS
 origins = os.getenv("CORS_ORIGINS", "http://localhost:5173").split(",")
