@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime, date as date_type
 
 from sqlalchemy import (
-    Column, String, Integer, Numeric, Date, DateTime, ForeignKey, UniqueConstraint,
+    Boolean, Column, String, Integer, Numeric, Date, DateTime, ForeignKey, UniqueConstraint,
 )
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.orm import relationship
@@ -24,6 +24,7 @@ class Trip(Base):
     name = Column(String(255), nullable=False)
     currency = Column(String(3), nullable=False, default="USD")
     settlement_currency = Column(String(3), nullable=True)  # NULL = per-currency (default)
+    is_deleted = Column(Boolean, nullable=False, default=False)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
 

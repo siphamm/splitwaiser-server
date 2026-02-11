@@ -19,7 +19,7 @@ def get_trip_by_token(
     access_token: str,
     db: Session = Depends(get_db),
 ) -> Trip:
-    trip = db.query(Trip).filter(Trip.access_token == access_token).first()
+    trip = db.query(Trip).filter(Trip.access_token == access_token, Trip.is_deleted == False).first()  # noqa: E712
     if not trip:
         raise HTTPException(status_code=404, detail="Trip not found")
     return trip

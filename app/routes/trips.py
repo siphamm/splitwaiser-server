@@ -104,9 +104,8 @@ def delete_trip(
 ):
     trip = get_trip_by_token(access_token, db)
     verify_creator(trip, x_creator_token)
-    trip.creator_member_id = None
-    db.flush()
-    db.delete(trip)
+    trip.is_deleted = True
+    trip.updated_at = datetime.utcnow()
     db.commit()
     return None
 
