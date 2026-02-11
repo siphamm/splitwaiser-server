@@ -45,3 +45,16 @@ def get_user_by_ctk(request: Request, db: Session) -> User | None:
     if not ctk:
         return None
     return db.query(User).filter(User.ctk == ctk).first()
+
+
+def get_or_create_user(request: Request, db: Session) -> User | None:
+    """Look up or create a User for the request's ctk cookie."""
+    ctk = request.cookies.get("ctk")
+    if not ctk:
+        return None
+    user = db.query(User).filter(User.ctk == ctk).first()
+    if not user:
+        user = User(ctk=ctk)
+        db.add(user)
+        db.flush()
+    return user
