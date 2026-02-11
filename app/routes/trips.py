@@ -104,6 +104,8 @@ def delete_trip(
 ):
     trip = get_trip_by_token(access_token, db)
     verify_creator(trip, x_creator_token)
+    trip.creator_member_id = None
+    db.flush()
     db.delete(trip)
     db.commit()
     return None
