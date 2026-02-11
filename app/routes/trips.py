@@ -76,7 +76,19 @@ def update_trip(
     x_creator_token: str | None = Header(None),
 ):
     trip = get_trip_by_token(access_token, db)
-    trip.name = data.name
+    verify_creator(trip, x_creator_token)
+
+    if data.name is not None:
+        trip.name = data.name
+
+    # settlement_currency: use UNSET sentinel to distinguish null (clear) from absent
+    raw = data.model_dump(exclude_unset=True)
+    if "settlement_currency" in raw:
+        sc = data.settlement_currency
+        if sc is not None and sc not in ("USD", "HKD", "JPY"):
+            raise HTTPException(status_code=400, detail="Invalid settlement currency")
+        trip.settlement_currency = sc
+
     trip.updated_at = datetime.utcnow()
     db.commit()
     db.refresh(trip)

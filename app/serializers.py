@@ -47,6 +47,7 @@ def serialize_trip(trip: Trip, is_creator: bool = False) -> dict:
         "access_token": trip.access_token,
         "name": trip.name,
         "currency": trip.currency,
+        "settlementCurrency": trip.settlement_currency,
         "members": [serialize_member(m) for m in trip.members],
         "expenses": [serialize_expense(e) for e in trip.expenses],
         "settlements": [serialize_settlement(s) for s in trip.settlements],

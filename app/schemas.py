@@ -12,7 +12,8 @@ class CreateTripIn(BaseModel):
 
 
 class UpdateTripIn(BaseModel):
-    name: str
+    name: str | None = None
+    settlement_currency: str | None = None
 
 
 # --- Members ---

@@ -23,6 +23,7 @@ class Trip(Base):
     creator_member_id = Column(String, ForeignKey("members.id", use_alter=True), nullable=True)
     name = Column(String(255), nullable=False)
     currency = Column(String(3), nullable=False, default="USD")
+    settlement_currency = Column(String(3), nullable=True)  # NULL = per-currency (default)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
 
@@ -86,3 +87,16 @@ class Settlement(Base):
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 
     trip = relationship("Trip", back_populates="settlements")
+
+
+class ExchangeRate(Base):
+    __tablename__ = "exchange_rates"
+
+    id = Column(String, primary_key=True, default=new_uuid)
+    date = Column(Date, nullable=False)
+    base_currency = Column(String(3), nullable=False)
+    target_currency = Column(String(3), nullable=False)
+    rate = Column(Numeric(18, 8), nullable=False)
+    fetched_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+    __table_args__ = (UniqueConstraint("date", "base_currency", "target_currency"),)
