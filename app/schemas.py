@@ -25,6 +25,7 @@ class AddMemberIn(BaseModel):
 class UpdateMemberIn(BaseModel):
     name: str | None = None
     settled_by_id: str | None = None
+    settlement_currency: str | None = None
 
 
 # --- Expenses ---

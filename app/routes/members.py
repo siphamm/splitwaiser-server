@@ -61,6 +61,13 @@ def update_member(
                 raise HTTPException(status_code=400, detail="Payer member not found")
         member.settled_by_id = data.settled_by_id
 
+    # Handle settlement_currency
+    if "settlement_currency" in (data.model_fields_set or set()):
+        sc = data.settlement_currency
+        if sc is not None and sc not in ("USD", "HKD", "JPY"):
+            raise HTTPException(status_code=400, detail="Invalid settlement currency")
+        member.settlement_currency = sc
+
     trip.updated_at = datetime.utcnow()
     db.commit()
     db.refresh(member)

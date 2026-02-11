@@ -19,12 +19,15 @@ def get_exchange_rates(
 
     trip = get_trip_by_token(access_token, db)
 
-    # Collect all currencies used in expenses and settlements
+    # Collect all currencies used in expenses, settlements, and member preferences
     currencies_used: set[str] = set()
     for expense in trip.expenses:
         currencies_used.add(expense.currency or trip.currency)
     for settlement in trip.settlements:
         currencies_used.add(settlement.currency or trip.currency)
+    for member in trip.members:
+        if member.settlement_currency:
+            currencies_used.add(member.settlement_currency)
 
     # If only one currency is used and it matches target, no rates needed
     if currencies_used <= {target}:

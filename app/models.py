@@ -39,6 +39,7 @@ class Member(Base):
     trip_id = Column(String, ForeignKey("trips.id", ondelete="CASCADE"), nullable=False)
     name = Column(String(255), nullable=False)
     settled_by_id = Column(String, ForeignKey("members.id", ondelete="SET NULL"), nullable=True)
+    settlement_currency = Column(String(3), nullable=True)  # NULL = same as group
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 
     trip = relationship("Trip", back_populates="members", foreign_keys=[trip_id])
