@@ -1,6 +1,7 @@
+import hashlib
 from datetime import datetime
 
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, Request
 from sqlalchemy.orm import Session
 
 from app.database import get_db
@@ -11,6 +12,10 @@ from app.exchange import SUPPORTED_CURRENCIES
 from app.ratelimit import limiter
 from app.schemas import CreateTripIn, UpdateTripIn
 from app.serializers import serialize_trip
+
+
+def _hash_password(password: str) -> str:
+    return hashlib.sha256(password.encode()).hexdigest()
 
 router = APIRouter()
 
@@ -65,6 +70,7 @@ def create_trip(request: Request, data: CreateTripIn, background_tasks: Backgrou
 def get_trip(
     access_token: str,
     request: Request,
+    password: str | None = Query(None),
     db: Session = Depends(get_db),
 ):
     trip = get_trip_by_token(access_token, db)
@@ -77,6 +83,14 @@ def get_trip(
         creator_member = db.query(Member).filter(Member.id == trip.creator_member_id).first()
         if creator_member and creator_member.user_id == user_id:
             is_creator = True
+
+    # Password protection: non-creators must provide correct password
+    if trip.password_hash and not is_creator:
+        if not password or _hash_password(password) != trip.password_hash:
+            raise HTTPException(
+                status_code=403,
+                detail={"message": "Password required", "password_protected": True},
+            )
 
     return serialize_trip(trip, is_creator=is_creator, user_id=user_id)
 
@@ -109,6 +123,11 @@ def update_trip(
         if sc is not None and sc not in SUPPORTED_CURRENCIES:
             raise HTTPException(status_code=400, detail="Invalid settlement currency")
         trip.settlement_currency = sc
+
+    # password: set or clear trip password
+    if "password" in raw:
+        pw = data.password
+        trip.password_hash = _hash_password(pw) if pw else None
 
     trip.updated_at = datetime.utcnow()
     db.commit()

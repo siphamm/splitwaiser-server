@@ -17,6 +17,7 @@ class Trip(Base):
     name = Column(String(255), nullable=False)
     currency = Column(String(3), nullable=False, default="USD")
     settlement_currency = Column(String(3), nullable=True)  # NULL = per-currency (default)
+    password_hash = Column(String(128), nullable=True)
     is_deleted = Column(Boolean, nullable=False, default=False)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)

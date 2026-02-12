@@ -77,4 +77,5 @@ def serialize_trip(trip: Trip, is_creator: bool = False, user_id: int | None = N
         "creator_member_id": str(trip.creator_member_id) if trip.creator_member_id is not None else None,
         "is_creator": is_creator,
         "your_member_id": your_member_id,
+        "isPasswordProtected": trip.password_hash is not None,
     }

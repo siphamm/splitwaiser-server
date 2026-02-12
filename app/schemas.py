@@ -15,6 +15,7 @@ class UpdateTripIn(BaseModel):
     name: str | None = None
     currency: str | None = None
     settlement_currency: str | None = None
+    password: str | None = None
 
 
 # --- Members ---
