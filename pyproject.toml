@@ -1,7 +1,7 @@
 [project]
-name = "splitwaiser-server"
+name = "yoyo-server"
 version = "0.1.0"
-description = "Backend API for Splitwaiser - group trip expense splitter"
+description = "Backend API for Yoyo - group trip expense splitter"
 requires-python = ">=3.12"
 dependencies = [
     "fastapi>=0.115.0",

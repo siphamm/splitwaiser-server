@@ -9,7 +9,7 @@ from slowapi.errors import RateLimitExceeded
 from app.database import engine, Base
 from app.middleware import CTKMiddleware
 from app.ratelimit import limiter
-from app.routes import trips, members, expenses, settlements, exchange, users
+from app.routes import trips, members, expenses, settlements, exchange, users, balances
 
 load_dotenv()
 
@@ -38,6 +38,7 @@ app.include_router(expenses.router, prefix="/api")
 app.include_router(settlements.router, prefix="/api")
 app.include_router(exchange.router, prefix="/api")
 app.include_router(users.router, prefix="/api")
+app.include_router(balances.router, prefix="/api")
 
 
 @app.get("/health")

@@ -6,7 +6,7 @@ from sqlalchemy.orm import sessionmaker, declarative_base, Session
 
 load_dotenv()
 
-DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./splitwaiser.db")
+DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./yoyo.db")
 
 # Handle Render's postgres:// -> postgresql://
 if DATABASE_URL.startswith("postgres://"):

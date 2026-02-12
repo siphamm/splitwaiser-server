@@ -21,7 +21,7 @@ DATABASE_URL=postgresql://postgres:postgres@localhost:5432/yoyo
 CORS_ORIGINS=http://localhost:5173
 ```
 
-For local dev with SQLite (no Postgres needed): just omit `DATABASE_URL` and it defaults to `sqlite:///./splitwaiser.db`.
+For local dev with SQLite (no Postgres needed): just omit `DATABASE_URL` and it defaults to `sqlite:///./yoyo.db`.
 
 ## Architecture
 
