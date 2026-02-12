@@ -24,7 +24,7 @@ app.add_middleware(
     allow_origins=[o.strip() for o in origins],
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE"],
-    allow_headers=["Content-Type", "X-Creator-Token"],
+    allow_headers=["Content-Type"],
 )
 app.add_middleware(CTKMiddleware)
 

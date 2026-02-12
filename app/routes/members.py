@@ -1,11 +1,11 @@
 from datetime import datetime
 
-from fastapi import APIRouter, Depends, Header, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.models import Member, Expense, ExpenseMember, Settlement
-from app.deps import get_trip_by_token, get_user_by_ctk, verify_creator
+from app.deps import get_trip_by_token, get_or_create_user, verify_creator
 from app.schemas import AddMemberIn, UpdateMemberIn
 from app.serializers import serialize_member
 
@@ -16,11 +16,11 @@ router = APIRouter()
 def add_member(
     access_token: str,
     data: AddMemberIn,
+    request: Request,
     db: Session = Depends(get_db),
-    x_creator_token: str | None = Header(None),
 ):
     trip = get_trip_by_token(access_token, db)
-    verify_creator(trip, x_creator_token)
+    verify_creator(trip, request, db)
 
     member = Member(trip_id=trip.id, name=data.name)
     db.add(member)
@@ -35,11 +35,11 @@ def update_member(
     access_token: str,
     member_id: str,
     data: UpdateMemberIn,
+    request: Request,
     db: Session = Depends(get_db),
-    x_creator_token: str | None = Header(None),
 ):
     trip = get_trip_by_token(access_token, db)
-    verify_creator(trip, x_creator_token)
+    verify_creator(trip, request, db)
 
     member = db.query(Member).filter(
         Member.id == member_id, Member.trip_id == trip.id
@@ -53,13 +53,16 @@ def update_member(
     # Handle settled_by_id: check it's explicitly in the request body
     if "settled_by_id" in (data.model_fields_set or set()):
         if data.settled_by_id is not None:
+            settled_by_int = int(data.settled_by_id)
             # Verify the payer exists in this trip
             payer = db.query(Member).filter(
-                Member.id == data.settled_by_id, Member.trip_id == trip.id
+                Member.id == settled_by_int, Member.trip_id == trip.id
             ).first()
             if not payer:
                 raise HTTPException(status_code=400, detail="Payer member not found")
-        member.settled_by_id = data.settled_by_id
+            member.settled_by_id = settled_by_int
+        else:
+            member.settled_by_id = None
 
     # Handle settlement_currency
     if "settlement_currency" in (data.model_fields_set or set()):
@@ -78,11 +81,11 @@ def update_member(
 def remove_member(
     access_token: str,
     member_id: str,
+    request: Request,
     db: Session = Depends(get_db),
-    x_creator_token: str | None = Header(None),
 ):
     trip = get_trip_by_token(access_token, db)
-    verify_creator(trip, x_creator_token)
+    verify_creator(trip, request, db)
 
     member = db.query(Member).filter(
         Member.id == member_id, Member.trip_id == trip.id
@@ -126,7 +129,7 @@ def claim_member(
     db: Session = Depends(get_db),
 ):
     trip = get_trip_by_token(access_token, db)
-    user = get_user_by_ctk(request, db)
+    user = get_or_create_user(request, db)
     if not user:
         raise HTTPException(status_code=400, detail="No user found for this browser")
 
@@ -135,6 +138,13 @@ def claim_member(
     ).first()
     if not member:
         raise HTTPException(status_code=404, detail="Member not found")
+
+    # Clear this user's claim on any other member in the same trip
+    db.query(Member).filter(
+        Member.trip_id == trip.id,
+        Member.user_id == user.id,
+        Member.id != member_id,
+    ).update({"user_id": None})
 
     member.user_id = user.id
     db.commit()

@@ -1,12 +1,12 @@
 from datetime import datetime
 
-from fastapi import APIRouter, BackgroundTasks, Depends, Header, HTTPException, Request
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.email import send_trip_link
 from app.models import Trip, Member
-from app.deps import generate_access_token, generate_creator_token, get_trip_by_token, get_or_create_user, verify_creator
+from app.deps import generate_access_token, get_trip_by_token, get_or_create_user, verify_creator
 from app.ratelimit import limiter
 from app.schemas import CreateTripIn, UpdateTripIn
 from app.serializers import serialize_trip
@@ -26,7 +26,6 @@ def create_trip(request: Request, data: CreateTripIn, background_tasks: Backgrou
 
     trip = Trip(
         access_token=generate_access_token(),
-        creator_token=generate_creator_token(),
         name=data.name,
         currency=data.currency,
     )
@@ -42,9 +41,9 @@ def create_trip(request: Request, data: CreateTripIn, background_tasks: Backgrou
 
     db.flush()  # get member IDs
 
+    user = get_or_create_user(request, db)
     if creator_member:
         trip.creator_member_id = creator_member.id
-        user = get_or_create_user(request, db)
         if user:
             creator_member.user_id = user.id
             if not user.name:
@@ -57,31 +56,39 @@ def create_trip(request: Request, data: CreateTripIn, background_tasks: Backgrou
         background_tasks.add_task(send_trip_link, data.email, trip.name, trip.access_token)
 
     return {
-        "trip": serialize_trip(trip, is_creator=True),
-        "creator_token": trip.creator_token,
+        "trip": serialize_trip(trip, is_creator=True, user_id=user.id if user else None),
     }
 
 
 @router.get("/trips/{access_token}")
 def get_trip(
     access_token: str,
+    request: Request,
     db: Session = Depends(get_db),
-    x_creator_token: str | None = Header(None),
 ):
     trip = get_trip_by_token(access_token, db)
-    is_creator = bool(x_creator_token and x_creator_token == trip.creator_token)
-    return serialize_trip(trip, is_creator=is_creator)
+    user = getattr(request.state, "user", None)
+    user_id = user.id if user else None
+
+    # Determine creator status
+    is_creator = False
+    if user_id and trip.creator_member_id:
+        creator_member = db.query(Member).filter(Member.id == trip.creator_member_id).first()
+        if creator_member and creator_member.user_id == user_id:
+            is_creator = True
+
+    return serialize_trip(trip, is_creator=is_creator, user_id=user_id)
 
 
 @router.patch("/trips/{access_token}")
 def update_trip(
     access_token: str,
     data: UpdateTripIn,
+    request: Request,
     db: Session = Depends(get_db),
-    x_creator_token: str | None = Header(None),
 ):
     trip = get_trip_by_token(access_token, db)
-    verify_creator(trip, x_creator_token)
+    verify_creator(trip, request, db)
 
     if data.name is not None:
         trip.name = data.name
@@ -97,18 +104,18 @@ def update_trip(
     trip.updated_at = datetime.utcnow()
     db.commit()
     db.refresh(trip)
-    is_creator = bool(x_creator_token and x_creator_token == trip.creator_token)
-    return serialize_trip(trip, is_creator=is_creator)
+    user = getattr(request.state, "user", None)
+    return serialize_trip(trip, is_creator=True, user_id=user.id if user else None)
 
 
 @router.delete("/trips/{access_token}", status_code=204)
 def delete_trip(
     access_token: str,
+    request: Request,
     db: Session = Depends(get_db),
-    x_creator_token: str | None = Header(None),
 ):
     trip = get_trip_by_token(access_token, db)
-    verify_creator(trip, x_creator_token)
+    verify_creator(trip, request, db)
     trip.is_deleted = True
     trip.updated_at = datetime.utcnow()
     db.commit()
@@ -118,11 +125,11 @@ def delete_trip(
 @router.post("/trips/{access_token}/rotate-token")
 def rotate_token(
     access_token: str,
+    request: Request,
     db: Session = Depends(get_db),
-    x_creator_token: str | None = Header(None),
 ):
     trip = get_trip_by_token(access_token, db)
-    verify_creator(trip, x_creator_token)
+    verify_creator(trip, request, db)
     trip.access_token = generate_access_token()
     trip.updated_at = datetime.utcnow()
     db.commit()

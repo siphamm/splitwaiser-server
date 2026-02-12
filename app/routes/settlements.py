@@ -24,15 +24,15 @@ def add_settlement(
     trip_member_ids = {
         m.id for m in db.query(Member.id).filter(Member.trip_id == trip.id).all()
     }
-    if data.from_member not in trip_member_ids:
+    if int(data.from_member) not in trip_member_ids:
         raise HTTPException(status_code=400, detail="'from' member not in this trip")
-    if data.to not in trip_member_ids:
+    if int(data.to) not in trip_member_ids:
         raise HTTPException(status_code=400, detail="'to' member not in this trip")
 
     settlement = Settlement(
         trip_id=trip.id,
-        from_member_id=data.from_member,
-        to_member_id=data.to,
+        from_member_id=int(data.from_member),
+        to_member_id=int(data.to),
         amount=data.amount,
         date=date_type.fromisoformat(data.date),
         currency=data.currency,

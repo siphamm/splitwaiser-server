@@ -12,15 +12,15 @@ from app.serializers import serialize_expense
 router = APIRouter()
 
 
-def _validate_expense_members(db: Session, trip_id: str, involved_members: list[str], paid_by: str):
+def _validate_expense_members(db: Session, trip_id: int, involved_members: list[str], paid_by: str):
     """Validate that all referenced members belong to this trip."""
     trip_member_ids = {
         m.id for m in db.query(Member.id).filter(Member.trip_id == trip_id).all()
     }
-    if paid_by not in trip_member_ids:
+    if int(paid_by) not in trip_member_ids:
         raise HTTPException(status_code=400, detail="Payer is not a member of this trip")
     for mid in involved_members:
-        if mid not in trip_member_ids:
+        if int(mid) not in trip_member_ids:
             raise HTTPException(status_code=400, detail=f"Member {mid} is not in this trip")
 
 
@@ -32,7 +32,7 @@ def _sync_expense_members(db: Session, expense: Expense, involved_members: list[
     for member_id in involved_members:
         em = ExpenseMember(
             expense_id=expense.id,
-            member_id=member_id,
+            member_id=int(member_id),
             split_value=split_details.get(member_id),
         )
         db.add(em)
@@ -51,7 +51,7 @@ def add_expense(
         trip_id=trip.id,
         description=data.description,
         amount=data.amount,
-        paid_by_id=data.paid_by,
+        paid_by_id=int(data.paid_by),
         date=date_type.fromisoformat(data.date),
         split_method=data.split_method,
         currency=data.currency,
@@ -85,7 +85,7 @@ def update_expense(
 
     expense.description = data.description
     expense.amount = data.amount
-    expense.paid_by_id = data.paid_by
+    expense.paid_by_id = int(data.paid_by)
     expense.date = date_type.fromisoformat(data.date)
     expense.split_method = data.split_method
     expense.currency = data.currency

@@ -1,18 +1,14 @@
 import secrets
 
-from fastapi import Depends, Header, HTTPException, Request
+from fastapi import Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.models import Trip, User
+from app.models import Member, Trip, User
 
 
 def generate_access_token() -> str:
     return secrets.token_urlsafe(18)  # ~24 chars
-
-
-def generate_creator_token() -> str:
-    return secrets.token_urlsafe(36)  # ~48 chars
 
 
 def get_trip_by_token(
@@ -25,23 +21,24 @@ def get_trip_by_token(
     return trip
 
 
-def verify_creator(
-    trip: Trip,
-    x_creator_token: str | None = Header(None),
-) -> Trip:
-    if not x_creator_token or x_creator_token != trip.creator_token:
-        raise HTTPException(status_code=403, detail="Creator token required")
-    return trip
+def verify_creator(trip: Trip, request: Request, db: Session) -> None:
+    """Check that the current user is the trip creator via CTK-derived user."""
+    user = getattr(request.state, "user", None)
+    if user and trip.creator_member_id:
+        creator_member = (
+            db.query(Member)
+            .filter(Member.id == trip.creator_member_id)
+            .first()
+        )
+        if creator_member and creator_member.user_id == user.id:
+            return
+
+    raise HTTPException(status_code=403, detail="Creator token required")
 
 
 def get_ctk(request: Request) -> str | None:
     """Read the cookie tracking key from the request."""
     return getattr(request.state, "ctk", None)
-
-
-def get_user_by_ctk(request: Request, db: Session) -> User | None:
-    """Return the User resolved by the CTK middleware."""
-    return getattr(request.state, "user", None)
 
 
 def get_or_create_user(request: Request, db: Session) -> User | None:
