@@ -4,12 +4,15 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 from starlette.responses import Response
 
+from app.database import SessionLocal
+from app.models import User
+
 CTK_COOKIE_NAME = "ctk"
 CTK_MAX_AGE = 315360000  # 10 years
 
 
 class CTKMiddleware(BaseHTTPMiddleware):
-    """Assigns a cookie tracking key (ctk) to every visitor."""
+    """Assigns a cookie tracking key (ctk) to every visitor and resolves User."""
 
     async def dispatch(self, request: Request, call_next) -> Response:
         # Skip CTK processing for CORS preflight requests
@@ -23,8 +26,15 @@ class CTKMiddleware(BaseHTTPMiddleware):
             ctk = secrets.token_urlsafe(24)
             new_ctk = True
 
-        # Make CTK available to route handlers via request.state
+        # Make CTK and resolved user available to route handlers
         request.state.ctk = ctk
+        request.state.user = None
+        if not new_ctk:
+            db = SessionLocal()
+            try:
+                request.state.user = db.query(User).filter(User.ctk == ctk).first()
+            finally:
+                db.close()
 
         response: Response = await call_next(request)
 

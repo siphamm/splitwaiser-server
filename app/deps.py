@@ -40,11 +40,8 @@ def get_ctk(request: Request) -> str | None:
 
 
 def get_user_by_ctk(request: Request, db: Session) -> User | None:
-    """Look up the User associated with the request's ctk cookie."""
-    ctk = get_ctk(request)
-    if not ctk:
-        return None
-    return db.query(User).filter(User.ctk == ctk).first()
+    """Return the User resolved by the CTK middleware."""
+    return getattr(request.state, "user", None)
 
 
 def get_or_create_user(request: Request, db: Session) -> User | None:
