@@ -45,9 +45,10 @@ class CTKMiddleware(BaseHTTPMiddleware):
                 value=ctk,
                 max_age=CTK_MAX_AGE,
                 httponly=True,
-                samesite="lax" if is_local else "none",
+                samesite="lax",
                 secure=not is_local,
                 path="/api",
+                domain=".getyoyo.co" if not is_local else None,
             )
 
         return response
