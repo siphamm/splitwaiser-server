@@ -66,8 +66,7 @@ def create_trip(request: Request, data: CreateTripIn, background_tasks: Backgrou
         trip.creator_member_id = creator_member.id
         if user:
             creator_member.user_id = user.id
-            if not user.name:
-                user.name = data.creator_name
+            user.name = data.creator_name
 
     db.commit()
     db.refresh(trip)
