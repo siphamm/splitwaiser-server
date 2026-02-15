@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.deps import get_trip_by_token
-from app.exchange import get_rates_for_currencies
+from app.exchange import get_rates_for_currencies, SUPPORTED_CURRENCIES
 
 router = APIRouter()
 
@@ -14,7 +14,7 @@ def get_exchange_rates(
     target: str = Query(..., description="Target settlement currency"),
     db: Session = Depends(get_db),
 ):
-    if target not in ("USD", "HKD", "JPY"):
+    if target not in SUPPORTED_CURRENCIES:
         raise HTTPException(status_code=400, detail="Invalid target currency")
 
     trip = get_trip_by_token(access_token, db)

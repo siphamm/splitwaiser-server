@@ -13,9 +13,9 @@ SUPPORTED_CURRENCIES = (
     "AUD", "BRL", "CAD", "CHF", "CNY", "CZK", "DKK", "EUR",
     "GBP", "HKD", "HUF", "IDR", "ILS", "INR", "ISK", "JPY",
     "KRW", "MXN", "MYR", "NOK", "NZD", "PHP", "PLN", "RON",
-    "SEK", "SGD", "THB", "TRY", "USD", "ZAR",
+    "SEK", "SGD", "THB", "TRY", "TWD", "USD", "VND", "ZAR",
 )
-FRANKFURTER_BASE = "https://api.frankfurter.dev/v1"
+EXCHANGE_API_BASE = "https://open.er-api.com/v6/latest"
 
 
 def get_rate(db: Session, base: str, target: str) -> tuple[float, date_type]:
@@ -47,8 +47,7 @@ def get_rate(db: Session, base: str, target: str) -> tuple[float, date_type]:
     # Fetch from API
     try:
         resp = httpx.get(
-            f"{FRANKFURTER_BASE}/latest",
-            params={"from": base, "to": target},
+            f"{EXCHANGE_API_BASE}/{base}",
             timeout=10,
         )
         resp.raise_for_status()
@@ -58,7 +57,7 @@ def get_rate(db: Session, base: str, target: str) -> tuple[float, date_type]:
     data = resp.json()
 
     rate_value = data["rates"][target]
-    rate_date = date_type.fromisoformat(data["date"])
+    rate_date = date_type.fromtimestamp(data["time_last_update_unix"]) if "time_last_update_unix" in data else date_type.today()
 
     # Upsert into cache
     existing = (
