@@ -14,7 +14,8 @@ class ReceiptExtractionResult(BaseModel):
     line_items: list[ReceiptLineItem]
     total: float | None = None  # grand total of the receipt (including tax, tips, fees, etc.)
     extras: float | None = None  # sum of tax, tips, fees, service charges — everything except line items
+    currency: str | None = None  # ISO 4217 currency code (e.g. "USD", "JPY")
 
 
 class ReceiptExtractor(Protocol):
-    async def extract(self, image_bytes: bytes, content_type: str) -> ReceiptExtractionResult: ...
+    async def extract(self, image_bytes: bytes, content_type: str, language: str = "en", fallback_currency: str = "USD") -> ReceiptExtractionResult: ...
