@@ -17,9 +17,13 @@ Rules:
 - line_items: only actual purchased items/products/services with their prices
 - amount is the total price for that line item (price * quantity), as a decimal number with full precision
 - quantity is optional (null if not visible)
-- total: the grand total shown on the receipt (the final amount paid, including everything). null if not visible.
-- extras: the sum of ALL non-item charges — tax, tips, service charges, fees, gratuity, etc. Add them all together into one number. null if none found.
-- Do NOT include tax/tips/fees/service charges as line_items
+- subtotal: the sum of all line item amounts (before tax, tips, discounts, fees). null if not visible on the receipt.
+- tax: the tax amount. null if not visible.
+- tips: the tips or gratuity amount. null if not visible.
+- discount: the discount amount as a positive number (e.g. if "$5 off", return 5). null if no discount.
+- fees: any other non-item charges — service charges, delivery fees, surcharges, etc. Add them together into one number. null if none found.
+- total: the grand total shown on the receipt (the final amount paid, after tax, tips, discounts, fees). null if not visible.
+- Do NOT include tax/tips/fees/discounts/service charges as line_items
 - Keep descriptions concise but recognizable
 - currency: the ISO 4217 currency code of the receipt (e.g. "USD", "JPY", "EUR"). Infer from currency symbols ($, ¥, €, etc.), country/region clues on the receipt, or the store's known location. If you cannot determine the currency, use the fallback currency provided by the user.
 - IMPORTANT: The title and item descriptions MUST be in the language specified by the user."""

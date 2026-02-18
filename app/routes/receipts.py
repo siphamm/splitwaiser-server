@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.deps import get_trip_by_token, verify_creator
+from app.receipt.base import ReceiptExtractionResult
 from app.receipt.factory import get_receipt_extractor
 
 
@@ -21,6 +22,25 @@ router = APIRouter()
 
 MAX_FILE_SIZE = 10 * 1024 * 1024  # 10 MB
 ALLOWED_CONTENT_TYPES = {"image/jpeg", "image/png", "image/webp", "image/heic", "image/heif"}
+
+
+def _serialize_result(result: ReceiptExtractionResult) -> dict:
+    extras = sum(v for v in (result.tax, result.tips, result.fees) if v) - (result.discount or 0)
+    return {
+        "title": result.title,
+        "lineItems": [
+            {"description": item.description, "amount": item.amount, "quantity": item.quantity}
+            for item in result.line_items
+        ],
+        "subtotal": result.subtotal,
+        "tax": result.tax,
+        "tips": result.tips,
+        "discount": result.discount,
+        "fees": result.fees,
+        "total": result.total,
+        "extras": extras if extras else None,
+        "currency": result.currency,
+    }
 
 
 @router.post("/scan-receipt")
@@ -52,16 +72,7 @@ async def scan_receipt_standalone(
 
     logger.info("Standalone receipt scanned", extra={"extra_data": {"items_count": len(result.line_items)}})
 
-    return {
-        "title": result.title,
-        "lineItems": [
-            {"description": item.description, "amount": item.amount, "quantity": item.quantity}
-            for item in result.line_items
-        ],
-        "total": result.total,
-        "extras": result.extras,
-        "currency": result.currency,
-    }
+    return _serialize_result(result)
 
 
 @router.post("/trips/{access_token}/scan-receipt")
@@ -102,13 +113,4 @@ async def scan_receipt(
         extra={"extra_data": {"trip_id": trip.id, "items_count": len(result.line_items)}},
     )
 
-    return {
-        "title": result.title,
-        "lineItems": [
-            {"description": item.description, "amount": item.amount, "quantity": item.quantity}
-            for item in result.line_items
-        ],
-        "total": result.total,
-        "extras": result.extras,
-        "currency": result.currency,
-    }
+    return _serialize_result(result)
